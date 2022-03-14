@@ -1,4 +1,4 @@
-from epidemioptim.environments.models.prague_ode_seirah_model import PragueOdeSeirahModel
+from worldoptim.environments.models.prague_ode_seirah_model import PragueOdeSeirahModel
 
 list_models = ['prague_seirah']
 def get_model(model_id, params={}):

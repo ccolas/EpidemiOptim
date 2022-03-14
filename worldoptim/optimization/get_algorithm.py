@@ -1,5 +1,5 @@
-from epidemioptim.optimization.dqn.dqn import DQN
-from epidemioptim.optimization.nsga.nsga import NSGAII
+from worldoptim.optimization.dqn.dqn import DQN
+from worldoptim.optimization.nsga.nsga import NSGAII
 
 
 def get_algorithm(algo_id, env, params={}):

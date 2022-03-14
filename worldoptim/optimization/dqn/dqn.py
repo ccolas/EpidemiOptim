@@ -11,11 +11,11 @@ import torch
 import torch.optim as optim
 import torch.autograd as ag
 
-from epidemioptim.optimization.shared.replay_buffer import ReplayBuffer
-from epidemioptim.optimization.shared.rollout import run_rollout
-from epidemioptim.optimization.base_algorithm import BaseAlgorithm
-from epidemioptim.optimization.shared.networks import Critic
-from epidemioptim.utils import Logger, compute_pareto_front
+from worldoptim.optimization.shared.replay_buffer import ReplayBuffer
+from worldoptim.optimization.shared.rollout import run_rollout
+from worldoptim.optimization.base_algorithm import BaseAlgorithm
+from worldoptim.optimization.shared.networks import Critic
+from worldoptim.utils import Logger, compute_pareto_front
 
 try:
     import sobol_seq

@@ -11,10 +11,10 @@ from sklearn.neighbors import NearestNeighbors
 from pymoo.configuration import Configuration
 Configuration.show_compile_hint = False
 
-from epidemioptim.optimization.shared.rollout import run_rollout
-from epidemioptim.optimization.base_algorithm import BaseAlgorithm
-from epidemioptim.optimization.shared.networks import QNetFC
-from epidemioptim.utils import compute_pareto_front
+from worldoptim.optimization.shared.rollout import run_rollout
+from worldoptim.optimization.base_algorithm import BaseAlgorithm
+from worldoptim.optimization.shared.networks import QNetFC
+from worldoptim.utils import compute_pareto_front
 
 
 def create_problem(n_params, n_objs, runner):

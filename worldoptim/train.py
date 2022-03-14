@@ -1,11 +1,11 @@
 import sys
 sys.path.append('../')
-from epidemioptim.environments.models import get_model
-from epidemioptim.environments.cost_functions import get_cost_function
-from epidemioptim.environments.gym_envs import get_env
-from epidemioptim.optimization import get_algorithm
-from epidemioptim.configs.get_params import get_params
-from epidemioptim.utils import get_logdir, set_seeds
+from worldoptim.environments.models import get_model
+from worldoptim.environments.cost_functions import get_cost_function
+from worldoptim.environments.gym_envs import get_env
+from worldoptim.optimization import get_algorithm
+from worldoptim.configs.get_params import get_params
+from worldoptim.utils import get_logdir, set_seeds
 import argparse
 
 CONFIG =  'dqn'  # 'nsga_ii', 'dqn', 'goal_dqn', 'goal_dqn_constraints'

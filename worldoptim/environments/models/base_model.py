@@ -157,7 +157,7 @@ class BaseModel(ABC):
         """
         Resets model state to initial state.
         """
-        self.current_state = dict(zip(self.internal_states_labels, np.array([self.initial_state['{}0'.format(s)] for s in self.internal_states_labels])))
+        self.current_state = dict(zip(self.internal_states_labels, np.array([self.initial_state['{}'.format(s)] for s in self.internal_states_labels])))
 
     def _get_current_state(self):
         """

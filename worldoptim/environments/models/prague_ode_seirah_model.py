@@ -5,8 +5,8 @@
 from scipy.integrate import odeint
 import pandas as pd
 
-from epidemioptim.environments.models.base_model import BaseModel
-from epidemioptim.utils import *
+from worldoptim.environments.models.base_model import BaseModel
+from worldoptim.utils import *
 
 PATH_TO_FITTED_PARAMS = get_repo_path() + '/data/model_data/estimatedIndividualParameters.csv'
 PATH_TO_FITTED_COV = get_repo_path() + '/data/model_data/data_cov.csv'

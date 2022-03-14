@@ -131,6 +131,8 @@ def get_stat_func(line='mean', err='std'):
 
     return line_f, err_minus, err_plus
 
+
+
 # # # # # # # # # # # # # # # # # # # # # # # #
 # Distributions
 # # # # # # # # # # # # # # # # # # # # # # # #
@@ -328,18 +330,18 @@ class DiscreteDist(BaseDist):
 def get_repo_path():
     try:
         dir_path = os.path.dirname(os.path.realpath(__file__)).split('/')
-        if dir_path.count('epidemioptim') == 1:
-            start_ind = dir_path.index('epidemioptim')
+        if dir_path.count('worldoptim') == 1:
+            start_ind = dir_path.index('worldoptim')
         else:
-            start_ind = - (list(reversed(dir_path)).index('epidemioptim') + 1)
+            start_ind = - (list(reversed(dir_path)).index('worldoptim') + 1)
 
         repo_path = '/'.join(dir_path[:start_ind]) + '/'
     except:  # fix attempt for windows paths, may need finetuning
         dir_path = os.path.dirname(os.path.realpath(__file__)).split('\\')
-        if dir_path.count('epidemioptim') == 1:
-            start_ind = dir_path.index('epidemioptim')
+        if dir_path.count('worldoptim') == 1:
+            start_ind = dir_path.index('worldoptim')
         else:
-            start_ind = - (list(reversed(dir_path)).index('epidemioptim') + 1)
+            start_ind = - (list(reversed(dir_path)).index('worldoptim') + 1)
 
         repo_path = '\\'.join(dir_path[:start_ind]) + "\\"
     return repo_path
