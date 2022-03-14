@@ -1,7 +1,7 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from epidemioptim.utils import set_seeds, get_repo_path
+from worldoptim.utils import set_seeds, get_repo_path
 from ipywidgets import *
 
 # # # # # # # # # # # # # # # # # # # # # # # #
@@ -322,10 +322,10 @@ def setup_visualization(folder, algorithm_str, seed, deterministic_model):
 
 
 def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=False):
-    from epidemioptim.environments.models import get_model
-    from epidemioptim.environments.cost_functions import get_cost_function
-    from epidemioptim.environments.gym_envs import get_env
-    from epidemioptim.optimization import get_algorithm
+    from worldoptim.environments.models import get_model
+    from worldoptim.environments.cost_functions import get_cost_function
+    from worldoptim.environments.gym_envs import get_env
+    from worldoptim.optimization import get_algorithm
 
     # print('Replaying: ', folder)
     with open(folder + 'params.json', 'r') as f:

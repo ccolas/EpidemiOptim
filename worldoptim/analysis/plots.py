@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from scipy.stats import ttest_ind
-from epidemioptim.utils import get_stat_func, get_repo_path
+from worldoptim.utils import get_stat_func, get_repo_path
 font = {'weight':'bold', 'size'   : 16}
 matplotlib.rc('font', **font)
 

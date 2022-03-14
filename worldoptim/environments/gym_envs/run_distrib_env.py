@@ -4,10 +4,10 @@ import gym
 from copy import deepcopy
 
 
-from epidemioptim.utils import plot_stats
-from epidemioptim.environments.cost_functions import get_cost_function
-from epidemioptim.environments.models import get_model
-from epidemioptim.environments.gym_envs import get_env
+from worldoptim.utils import plot_stats
+from worldoptim.environments.cost_functions import get_cost_function
+from worldoptim.environments.models import get_model
+from worldoptim.environments.gym_envs import get_env
 if __name__ == '__main__':
 
     simulation_horizon = 364

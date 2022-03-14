@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from epidemioptim.environments.gym_envs.base_env import BaseEnv
+from worldoptim.environments.gym_envs.base_env import BaseEnv
 
 
 class EpidemicDiscrete(BaseEnv):
@@ -370,9 +370,9 @@ class EpidemicDiscrete(BaseEnv):
 
 
 if __name__ == '__main__':
-    from epidemioptim.utils import plot_stats
-    from epidemioptim.environments.cost_functions import get_cost_function
-    from epidemioptim.environments.models import get_model
+    from worldoptim.utils import plot_stats
+    from worldoptim.environments.cost_functions import get_cost_function
+    from worldoptim.environments.models import get_model
 
     simulation_horizon = 364
     stochastic = False

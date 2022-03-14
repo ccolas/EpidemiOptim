@@ -1,2 +1,0 @@
-from epidemioptim.environments.cost_functions.get_cost_function import get_cost_function
-from epidemioptim.environments.cost_functions import costs

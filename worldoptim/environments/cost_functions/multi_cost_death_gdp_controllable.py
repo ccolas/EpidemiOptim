@@ -1,6 +1,6 @@
-from epidemioptim.environments.cost_functions.costs.death_toll_cost import DeathToll
-from epidemioptim.environments.cost_functions.costs.gdp_recess_cost import GdpRecess
-from epidemioptim.environments.cost_functions.base_multi_cost_function import BaseMultiCostFunction
+from worldoptim.environments.cost_functions.costs.death_toll_cost import DeathToll
+from worldoptim.environments.cost_functions.costs.gdp_recess_cost import GdpRecess
+from worldoptim.environments.cost_functions.base_multi_cost_function import BaseMultiCostFunction
 import numpy as np
 
 

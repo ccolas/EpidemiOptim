@@ -4,7 +4,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from epidemioptim.utils import plot_stats, get_repo_path
+from worldoptim.utils import plot_stats, get_repo_path
 from notebook_utils import setup_for_replay
 
 NB_EPISODES = 5

@@ -1,4 +1,4 @@
-from epidemioptim.environments.cost_functions.costs.base_cost_function import BaseCostFunction
+from worldoptim.environments.cost_functions.costs.base_cost_function import BaseCostFunction
 
 
 class DeathToll(BaseCostFunction):
