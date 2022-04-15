@@ -101,28 +101,6 @@ class BaseMultiCostFunction(ABC):
         """
         pass
 
-    @abstractmethod
-    def compute_deaths(self, previous_state, state, label_to_id, action, others={}):
-        """
-        Compute death toll
-
-       Parameters
-        ----------
-        previous_state: 2D nd.array
-            Previous model states (either 1D or 2D with first dimension # of states).
-        state: 2D nd.array
-            Current model states (either 1D or 2D with first dimension # of states).
-        label_to_id: dict
-            Mapping between state labels and indices in the state vector.
-        action: int or nd.array
-            Int for discrete envs and nd.array in continuous envs.
-
-        Returns
-        -------
-        int
-            Number of deaths
-        """
-        pass
 
     @abstractmethod
     def compute_aggregated_cost(self, costs, constraints=None):

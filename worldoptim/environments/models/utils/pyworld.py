@@ -31,7 +31,7 @@ class Clipper:
 
 
 
-def plot_world_state(time, states, title=None, dist_spines=0.09):
+def plot_world_state(time, states, title=None, dist_spines=0.09, show=True):
     """
     Plots world state from a World2 instance.
 
@@ -87,3 +87,5 @@ def plot_world_state(time, states, title=None, dist_spines=0.09):
         fig.suptitle(title, x=0.95, ha="right", fontsize=10)
 
     plt.tight_layout()
+    if show:
+        plt.show()

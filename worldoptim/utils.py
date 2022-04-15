@@ -9,21 +9,20 @@ import pandas as pd
 
 import torch
 plt.rcParams['figure.constrained_layout.use'] = True
-# font = {'weight':'bold', 'size'   : 22}
-# import matplotlib
-# matplotlib.rc('font', **font)
+font = {'weight':'bold', 'size'   : 22}
+import matplotlib
+matplotlib.rc('font', **font)
 
 
 # # # # # # # # # # # # # # # # # # # # # # # #
 # Plots
 # # # # # # # # # # # # # # # # # # # # # # # #
 
-
 def plot_stats(t, states, labels, legends=None, title=None, lockdown=None, icu_capacity=None, axs=None, fig=None, time_jump=1, show=False):
     n_plots = len(states)
     if axs is None:
         print_a = True
-        x = int(np.sqrt(n_plots))
+        x = 2#int(np.sqrt(n_plots))
         y = int(n_plots / x - 1e-4) + 1
         fig, axs = plt.subplots(x, y, figsize=(12, 7))
         axs = axs.ravel()
@@ -33,16 +32,15 @@ def plot_stats(t, states, labels, legends=None, title=None, lockdown=None, icu_c
     for i in range(n_plots):
         if isinstance(states[i], list):
             axs[i].plot(t, np.array(states[i]).transpose(), linewidth=2)
-            # if legends is not None:
-            #     if legends[i] is not None:
-            #         axs[i].legend(legends[i], frameon=False, fontsize=15, prop={'weight': 'normal'})
         else:
             axs[i].plot(t, states[i], linewidth=5)
-
+        if legends is not None:
+            if legends[i] is not None:
+                axs[i].legend(legends[i], frameon=False, fontsize=15, prop={'weight': 'normal'})
         axs[i].set_ylabel(labels[i], fontweight='bold')
         if i == 4:
             axs[i].set_xlabel('days', fontweight='bold')
-        axs[i].set_xticks([0, 100, 200, 300])
+        axs[i].set_xticks(np.arange(1900, 2101, 50))
         axs[i].spines['top'].set_linewidth(2)
         axs[i].spines['right'].set_linewidth(2)
         axs[i].spines['bottom'].set_linewidth(2)
