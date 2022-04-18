@@ -50,7 +50,7 @@ class QoLCost(BaseCostFunction):
         """
         # compute new deaths and pib loss
         qol = state[:, label_to_id['QL']]
-        cost = -qol
+        cost = 12 - qol  # Try to get the QoL between 0 and 12
         return cost
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

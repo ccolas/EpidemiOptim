@@ -51,7 +51,7 @@ class World2(BaseModel):
         self.labels_for_agent = ['']
         self.stocks = ['P', 'POL', 'CI', 'NR', 'CIAF']
         self.rates = ['QL', 'DR', 'BR', 'NRUR', 'CIG', 'CID', 'POLG', 'POLA']
-        self.control_variables = ['NRUN', 'POLN', 'CIGN', 'BRN', 'FC']
+        self.control_variables = ['NRUN', 'POLN', 'CIGN', 'BRN', 'FC']  # from Forrester
         self.control_variables_ranges = ((0.2, 1), (0.2, 1), (0.2, 1), (0.2, 1), (0.2, 2))  # to think about
         self.state_labels_for_agent = self.stocks + self.rates + self.control_variables
 
@@ -67,14 +67,10 @@ class World2(BaseModel):
     def update_json_tables(self, json_tables):
         self.json_tables = json_tables
 
-    # def update_json_switches(self, json_switches):
-    #     self.json_switches = json_switches
-
     def define_params_and_initial_state_distributions(self):
         """
         Extract and define distributions of parameters for all French regions
         """
-
 
         self._all_internal_params_distribs = dict(LA=DiracDist(params=135e6, stochastic=self.stochastic),
                                                   PDN=DiracDist(params=26.5, stochastic=self.stochastic),
@@ -169,6 +165,12 @@ class World2(BaseModel):
         for k in self.control_variables:
             self.initial_state[k] = self.initial_internal_params[k]
 
+        # self.run_one_step(self.initial_state)
+
+    def reset(self):
+        super().reset()
+        self.run_one_step(self.current_state.copy())
+
     def _sample_model_params(self):
         """
         Samples parameters of the model from their distribution (Dirac distributions if self.stochastic is False).
@@ -179,14 +181,8 @@ class World2(BaseModel):
             self.initial_internal_params[k] = self._all_internal_params_distribs[k].sample()
 
         self.complete_param_distrib_with_table_params(self.json_tables)
-        # self.complete_param_distrib_with_switch_params(self.json_switches)
         self._reset_model_params()
         self.update_funcs()
-
-    # def update_model_params(self, new_params):
-    #     assert sorted(self.current_internal_params.keys()) == sorted(new_params.keys())
-    #     self.current_internal_params = new_params
-    #     self.update_funcs()
 
 
     def run_one_step(self, state):
@@ -312,36 +308,9 @@ class World2(BaseModel):
                                         params[-1, 1]))
             self.tables[table_func_name] = func
 
-    # def complete_param_distrib_with_switch_params(self, json_switches=None):
-    #     if json_switches is None:
-    #         json_switches = "functions_switch_default.json"
-    #         json_switches = get_repo_path() + f'data/model_data/world2/{json_switches}'
-    #     with open(json_switches) as fjson:
-    #         switches = json.load(fjson)
-    #
-    #     # first, extract all parameters and add them to the initial_internal_params attribute
-    #     self.switch_func_names = ["BRN", "DRN", "CIDN", "CIGN", "FC", "NRUN", "POLN"]
-    #
-    #     switch_names = []
-    #     for func_name in self.switch_func_names:
-    #         for switch in switches:
-    #             if func_name in switch.keys():
-    #                 self.initial_internal_params[func_name] = (switch[func_name], switch[func_name + "1"], switch["trigger.value"])
-    #                 switch_names.append(func_name)
-    #     assert sorted(self.switch_func_names) == sorted(switch_names)  # check that we have all params
-
-    # def update_switch_funcs(self):
-    #     self.switches = dict()
-    #     for switch_func_name in self.switch_func_names:
-    #         params = self.current_internal_params[switch_func_name]
-    #         self.switches[switch_func_name] = Clipper(params[0], params[1], params[2])
-
-
     def update_funcs(self):
         self.update_table_funcs()
-        # self.update_switch_funcs()
         self.f = self.tables
-        # self.f.update(self.switches)
 
 
 if __name__ == '__main__':

@@ -2,15 +2,15 @@ import numpy as np
 import gym
 from worldoptim.environments.gym_envs.base_env import BaseEnv
 from worldoptim.environments.models.utils.pyworld import plot_world_state
-
+import pickle
 
 class World2Discrete(BaseEnv):
     def __init__(self,
                  cost_function,
                  model,
-                 simulation_horizon,
-                 time_action_start=70,
-                 percentage_shift=0.05,
+                 simulation_horizon=200,  # simulation horizon (starts in 1900)
+                 time_action_start=70,  # delay before the policy starts controlling the model (in years)
+                 percentage_shift=0.05,  # strength of the control exerted on control variables
                  time_resolution=1,  # 1 year
                  seed=np.random.randint(1e6)
                  ):
@@ -22,7 +22,7 @@ class World2Discrete(BaseEnv):
         cost_function: BaseCostFunction
             A cost function.
         model: BaseModel
-            An epidemiological model.
+            A dynamical  model.
         simulation_horizon: int
             Simulation horizon in years.
         time_resolution: int
@@ -36,7 +36,7 @@ class World2Discrete(BaseEnv):
         self.reset_same = False  # whether the next reset resets the same dynamical model
         self.time_action_start = time_action_start
         self.percentage_shift = percentage_shift
-        self.dim_action = 5
+        self.dim_action = len(self.model.control_variables)  # one action for each control variable
 
         # Initialize cost function
         self.cost_function = cost_function
@@ -46,9 +46,14 @@ class World2Discrete(BaseEnv):
         # Initialize states
         self.state_labels = self.model.state_labels_for_agent +\
                             ['cumulative_cost_{}'.format(id_cost) for id_cost in range(self.cost_function.nb_costs)] # + []
+        # define dict to translate labels to id in the state vector
         self.label_to_id = dict(zip(self.state_labels, np.arange(len(self.state_labels))))
-        self.normalization_factors = [1] * len(self.state_labels)
+        # define scalars to normalize state features
+        with open('../../../data/model_data/world2/1970_state.pkl', 'rb') as f:
+            state_1970 = pickle.load(f)
+        self.normalization_factors = np.array([state_1970[k] for k in self.state_labels])
         self.time_resolution = time_resolution
+        if time_resolution != 1: assert NotImplementedError, 'only time_resolution=1 currently supported.'
 
         super().__init__(cost_function=cost_function,
                          model=model,
@@ -63,7 +68,6 @@ class World2Discrete(BaseEnv):
     def _update_previous_env_state(self):
         """
         Save previous env state.
-
         """
         if self.env_state is not None:
             self.previous_env_state = self.env_state.copy()
@@ -80,7 +84,8 @@ class World2Discrete(BaseEnv):
         for k in self.model.state_labels_for_agent:
             index = self.model.internal_states_labels.index(k)
             self.env_state_labelled[k] = self.model_state[index]
-
+        if self.env_state_labelled['QL'] == 1:
+            stop = 1
         for id_cost in range(self.nb_costs):
             self.env_state_labelled['cumulative_cost_{}'.format(id_cost)] = self.cumulative_costs[id_cost]
         assert sorted(list(self.env_state_labelled.keys())) == sorted(self.state_labels), "labels do not match"
@@ -96,8 +101,6 @@ class World2Discrete(BaseEnv):
         """
         To call if you want to reset to the same model the next time you call reset.
         Will be cancelled after the first reset, it needs to be called again each time.
-
-
         """
         self.reset_same = True
 
@@ -114,6 +117,7 @@ class World2Discrete(BaseEnv):
 
         # initialize history of states, internal model states, actions, cost_functions, deaths
         self.history = dict(env_states=[],
+                            normalized_env_states=[],
                             model_states=[],
                             env_timesteps=[],
                             actions=[],
@@ -135,22 +139,23 @@ class World2Discrete(BaseEnv):
         self._update_env_state()
 
         self.history['env_states'].append(self.env_state.copy())
+        self.history['normalized_env_states'].append(self._normalize_env_state(self.env_state))
         self.history['model_states'].append(self.model_state.copy().tolist())
         self.history['env_timesteps'].append(self.t)
 
-        for _ in range(self.time_action_start):
-            self.step(action=[0] * self.dim_action)
+        for _ in range(self.time_action_start):  # run self.time_action_start steps before allowing the agent to control
+            self.step(action=[0] * self.dim_action)  # [0] * dim_action is the default action (no control exerted)
 
         return self._normalize_env_state(self.env_state)
 
     def update_with_action(self, action):
         """
-        Implement effect of action on transmission rate.
+        Implement effect of action on the dynamical model
 
         Parameters
         ----------
         action: int
-            Action is 0 (no lock-down) or 1 (lock-down).
+            Action is -1 to decrease by X%, +1 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
 
         """
         # add or substract self.percentage_shift percent of the control state
@@ -170,7 +175,7 @@ class World2Discrete(BaseEnv):
         Parameters
         ----------
         action: int
-            Action is 0 (no lock-down) or 1 (lock-down).
+            Action is -1 to decrease by X%, +1 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
 
 
         Returns
@@ -188,15 +193,13 @@ class World2Discrete(BaseEnv):
 
         self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
 
+        # uncomment this to test the 'increased natural resources scenario'
         if self.t == 70:
             self.model.current_internal_params['NRUN'] = 0.25
         # self.update_with_action(action)
 
         # Run model for jump_of steps
-        model_state = [self.model_state]
-        model_states = []
-        model_state = self.model.run_n_steps(model_state[-1], 1)
-        model_states += model_state.tolist()
+        model_state = self.model.run_n_steps(self.model_state.copy(), 1)
         self.model_state = model_state[-1]  # last internal state is the new current one
         self.t += self.jump_of
 
@@ -217,6 +220,7 @@ class World2Discrete(BaseEnv):
 
         self.history['actions'] += [action] * self.jump_of
         self.history['env_states'] += [self.env_state.copy()] * self.jump_of
+        self.history['normalized_env_states'] += [self._normalize_env_state(self.env_state)] * self.jump_of
         self.history['env_timesteps'] += list(range(self.t - self.jump_of, self.t))
         self.history['model_states'] += [self.model_state.copy()]
 
@@ -248,12 +252,6 @@ class World2Discrete(BaseEnv):
     def _normalize_env_state(self, env_state):
         return (env_state / np.array(self.normalization_factors)).copy()
 
-    # def _set_rew_params(self, goal):
-    #     self.cost_function.set_goal_params(goal.copy())
-    #
-    # def sample_cost_function_params(self):
-    #     return self.cost_function.sample_goal_params()
-
     # Format data for plotting
     def get_data(self):
 
@@ -266,11 +264,14 @@ class World2Discrete(BaseEnv):
         aggregated = [self.cost_function.compute_aggregated_cost(costs, beta) for beta in betas]
         control_variables = [np.array(self.history['env_states'])[:, self.state_labels.index(k)] for k in self.model.control_variables]
         control_labels = self.model.control_variables
-        stocks = [np.array(self.history['env_states'])[:, self.state_labels.index(k)] for k in self.model.stocks]
+        # plot normalized values for stocks and rates (normalized wrt 1970).
+        stocks = [np.array(self.history['normalized_env_states'])[:, self.state_labels.index(k)] for k in self.model.stocks]
         stocks_labels = self.model.stocks
-        rates = [np.array(self.history['env_states'])[:, self.state_labels.index(k)] for k in self.model.rates]
+        rates = [np.array(self.history['normalized_env_states'])[:, self.state_labels.index(k)] for k in self.model.rates]
         rates_labels = self.model.rates
-        death_rate = np.array(self.history['env_states'])[:, self.state_labels.index('DR')]
+        death_rate = np.array(self.history['env_states'])[:, self.state_labels.index('DR')] / \
+                     np.array(self.history['env_states'])[:, self.state_labels.index('P')] / 0.028
+
         qol = np.array(self.history['env_states'])[:, self.state_labels.index('QL')]
         to_plot = [np.array(control_variables).transpose(),
                    np.array(stocks).transpose(),
@@ -312,7 +313,7 @@ if __name__ == '__main__':
 
     model = get_model(model_id='world2', params=dict(stochastic=stochastic))
 
-    cost_function = get_cost_function(cost_function_id='multi_cost_deathrate_qol', params=dict())
+    cost_function = get_cost_function(cost_function_id='multi_cost_deathrate_qol', params=dict(drn=model.initial_internal_params['DRN']))
 
     env = gym.make('World2Discrete-v0',
                    cost_function=cost_function,
@@ -327,6 +328,7 @@ if __name__ == '__main__':
     done = False
     t = 0
     while not done:
+        print(t)
         out = env.step(actions[t])
         t += 1
         done = out[2]

@@ -1,9 +1,11 @@
 from worldoptim.environments.cost_functions.costs.base_cost_function import BaseCostFunction
+import numpy as np
 
 
 class DeathRate(BaseCostFunction):
     def __init__(self,
                  id_cost,
+                 drn,  # base DR computed in 1970
                  scale_factor=0.65 * 1e3,
                  range_constraints=()):
         """
@@ -28,6 +30,13 @@ class DeathRate(BaseCostFunction):
         super().__init__(scale_factor=scale_factor,
                          range_constraints=range_constraints)
         self.id_cost = id_cost
+        self.drn = drn
+
+    def cost_from_normalized_dr(self, x, shift=1, beta=1):
+        # function that increases exponentially above 1, has a 0 cost below 1.
+        y = np.exp(x.copy() * beta + shift) - np.exp(beta + shift)
+        y[np.where(x < 1)] = 0
+        return y
 
     def compute_cost(self, previous_state, state, label_to_id, action, others={}):
         """
@@ -49,9 +58,11 @@ class DeathRate(BaseCostFunction):
             number of deaths for each state.
 
         """
-        # compute new deaths and pib loss
-        death_rate = state[:, label_to_id['DR']]
-        cost = death_rate
+        # compute death rate
+        # DR state is actually the number of deaths. True death rate is DR / P. We normalize by the DR of 1970, i.e. DRN
+        death_rate = state[:, label_to_id['DR']] / state[:, label_to_id['P']] / self.drn
+        # now we want the cost to be 0 when this normalized death rate is below 1 (below 1970's level), but then increases exponentially
+        cost = self.cost_from_normalized_dr(death_rate)
         return cost
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

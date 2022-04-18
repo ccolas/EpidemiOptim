@@ -9,8 +9,9 @@ class MultiCostDeathrateQOL(BaseMultiCostFunction):
     # The death rate cost: exponential function of death rate, with minimum threshold
     # The quality of life cost: - QoL
     def __init__(self,
+                 drn,
                  use_constraints=False,
-                 beta_default=0.5
+                 beta_default=0.5,
                  ):
         """
         Multi-objective cost functions with two costs: death rate and QoL. It is controllable by
@@ -29,7 +30,7 @@ class MultiCostDeathrateQOL(BaseMultiCostFunction):
         self.beta = self.beta_default
 
         # Initialize cost functions
-        self.death_rate_cost = DeathRate(id_cost=0)
+        self.death_rate_cost = DeathRate(id_cost=0, drn=drn)
         self.qol_cost = QoLCost(id_cost=1)
 
         self.costs = [self.death_rate_cost, self.qol_cost]
