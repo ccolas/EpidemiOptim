@@ -4,7 +4,7 @@ from worldoptim.environments.cost_functions.costs.base_cost_function import Base
 class QoLCost(BaseCostFunction):
     def __init__(self,
                  id_cost,
-                 scale_factor=0.65 * 1e3,
+                 scale_factor=1,
                  range_constraints=()):
         """
          Cost related to the quality of life.
@@ -50,7 +50,7 @@ class QoLCost(BaseCostFunction):
         """
         # compute new deaths and pib loss
         qol = state[:, label_to_id['QL']]
-        cost = 12 - qol  # Try to get the QoL between 0 and 12
+        cost = (1 - qol) * 10
         return cost
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

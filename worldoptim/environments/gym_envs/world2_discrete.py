@@ -9,7 +9,7 @@ class World2Discrete(BaseEnv):
                  cost_function,
                  model,
                  simulation_horizon=200,  # simulation horizon (starts in 1900)
-                 time_action_start=70,  # delay before the policy starts controlling the model (in years)
+                 time_action_start=122,  # delay before the policy starts controlling the model (in years)
                  percentage_shift=0.05,  # strength of the control exerted on control variables
                  time_resolution=1,  # 1 year
                  seed=np.random.randint(1e6)
@@ -167,7 +167,9 @@ class World2Discrete(BaseEnv):
                 self.model.current_internal_params[v] -= self.percentage_shift * self.model.current_internal_params[v]
             # clip them to reasonable values
             self.model.current_internal_params[v] = np.clip(self.model.current_internal_params[v], *self.model.control_variables_ranges[i_v])
-
+        # for v in self.model.control_variables:
+        #     if self.model.current_internal_params[v] > 1 or self.model.current_internal_params[v] < 0.2:
+        #         stop = 1
     def step(self, action):
         """
         Traditional step function from OpenAI Gym envs. Uses the action to update the environment.
@@ -194,9 +196,9 @@ class World2Discrete(BaseEnv):
         self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
 
         # uncomment this to test the 'increased natural resources scenario'
-        if self.t == 70:
-            self.model.current_internal_params['NRUN'] = 0.25
-        # self.update_with_action(action)
+        # if self.t == 70:
+        #     self.model.current_internal_params['NRUN'] = 0.25
+        self.update_with_action(action)
 
         # Run model for jump_of steps
         model_state = self.model.run_n_steps(self.model_state.copy(), 1)
@@ -281,8 +283,8 @@ class World2Discrete(BaseEnv):
                     death_rate,
                     qol,
                     np.array(aggregated).transpose()]
-        labels = ['Control variables', 'Stocks', 'Rates']
-        labels2 = ['Costs', 'Death rate', 'Quality of Life', 'Aggregated costs']
+        labels = ['Control variables', 'Stocks (1970-normalized)', 'Rates (1970-normalized)']
+        labels2 = ['Costs', 'Death rate (1970 normalized)', 'Quality of Life (1970-normalized)', 'Aggregated costs']
         legends = [control_labels, stocks_labels, rates_labels]
         legends2 = [['Death rate cost', 'QoL cost'], None, None, [r'$\beta = $' + str(beta) for beta in betas],]
         stats_run = dict(to_plot=to_plot,
@@ -308,7 +310,7 @@ if __name__ == '__main__':
     from worldoptim.environments.models import get_model
 
     simulation_horizon = 200
-    action_start = 71
+    action_start = 122
     stochastic = False
 
     model = get_model(model_id='world2', params=dict(stochastic=stochastic))
@@ -328,7 +330,6 @@ if __name__ == '__main__':
     done = False
     t = 0
     while not done:
-        print(t)
         out = env.step(actions[t])
         t += 1
         done = out[2]

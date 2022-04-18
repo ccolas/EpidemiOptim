@@ -52,7 +52,10 @@ class World2(BaseModel):
         self.stocks = ['P', 'POL', 'CI', 'NR', 'CIAF']
         self.rates = ['QL', 'DR', 'BR', 'NRUR', 'CIG', 'CID', 'POLG', 'POLA']
         self.control_variables = ['NRUN', 'POLN', 'CIGN', 'BRN', 'FC']  # from Forrester
-        self.control_variables_ranges = ((0.2, 1), (0.2, 1), (0.2, 1), (0.2, 1), (0.2, 2))  # to think about
+        # NRUN is the usage of natural resources per person in 1970, let's sa
+        # POLN is the pollution generation per person
+        # between 0.2 and 2 the "normal" values from 1970.
+        self.control_variables_ranges = ((0.2, 2), (0.2, 2), (0.2 * 0.05, 2 * 0.05), (0.2 * 0.04, 2 * 0.04), (0.2, 2))  # to think about
         self.state_labels_for_agent = self.stocks + self.rates + self.control_variables
 
         # Sample initial conditions and initial model parameters

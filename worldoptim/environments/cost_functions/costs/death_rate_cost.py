@@ -6,7 +6,7 @@ class DeathRate(BaseCostFunction):
     def __init__(self,
                  id_cost,
                  drn,  # base DR computed in 1970
-                 scale_factor=0.65 * 1e3,
+                 scale_factor=1,
                  range_constraints=()):
         """
          Cost related to the death rate.
