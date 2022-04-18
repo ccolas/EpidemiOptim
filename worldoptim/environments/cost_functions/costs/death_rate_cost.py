@@ -62,7 +62,7 @@ class DeathRate(BaseCostFunction):
         # DR state is actually the number of deaths. True death rate is DR / P. We normalize by the DR of 1970, i.e. DRN
         death_rate = state[:, label_to_id['DR']] / state[:, label_to_id['P']] / self.drn
         # now we want the cost to be 0 when this normalized death rate is below 1 (below 1970's level), but then increases exponentially
-        cost = self.cost_from_normalized_dr(death_rate)
+        cost = np.clip(self.cost_from_normalized_dr(death_rate), 0, 400)
         return cost
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

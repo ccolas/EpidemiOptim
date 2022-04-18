@@ -9,7 +9,7 @@ import pandas as pd
 
 import torch
 plt.rcParams['figure.constrained_layout.use'] = True
-font = {'weight':'bold', 'size'   : 22}
+font = {'weight':'bold', 'size'   : 14}
 import matplotlib
 matplotlib.rc('font', **font)
 
@@ -40,7 +40,7 @@ def plot_stats(t, states, labels, legends=None, title=None, lockdown=None, icu_c
         axs[i].set_ylabel(labels[i], fontweight='bold')
         if i == 4:
             axs[i].set_xlabel('days', fontweight='bold')
-        axs[i].set_xticks(np.arange(1900, 2101, 50))
+        axs[i].set_xticks(np.arange(1900, 2201, 50))
         axs[i].spines['top'].set_linewidth(2)
         axs[i].spines['right'].set_linewidth(2)
         axs[i].spines['bottom'].set_linewidth(2)

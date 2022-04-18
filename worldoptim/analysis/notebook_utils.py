@@ -338,8 +338,8 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
                         params=params['model_params'])
 
     # update reward params
-    params['cost_params']['N_region'] = int(model.pop_sizes[params['model_params']['region']])
-    params['cost_params']['N_country'] = int(np.sum(list(model.pop_sizes.values())))
+    params['cost_params']['drn'] = model.initial_internal_params['DRN']
+
 
     set_seeds(seed)
 
@@ -351,7 +351,8 @@ def setup_for_replay(folder, seed=np.random.randint(1e6), deterministic_model=Fa
                   cost_function=cost_function,
                   model=model,
                   simulation_horizon=params['simulation_horizon'],
-                  seed=seed)
+                  seed=seed,
+                  **params['env_params'])
 
     # Get DQN algorithm parameterized by beta
     algorithm = get_algorithm(algo_id=params['algo_id'],

@@ -13,7 +13,7 @@ Configuration.show_compile_hint = False
 
 from worldoptim.optimization.shared.rollout import run_rollout
 from worldoptim.optimization.base_algorithm import BaseAlgorithm
-from worldoptim.optimization.shared.networks import QNetFC
+from worldoptim.optimization.shared.networks import MultiHeadQNetFC
 from worldoptim.utils import compute_pareto_front
 
 
@@ -78,7 +78,9 @@ class NSGAII(BaseAlgorithm):
         self.stochastic = params['model_params']['stochastic']
         self.n_evals_if_stochastic = self.algo_params['n_evals_if_stochastic']
         self.dims = dict(s=env.observation_space.shape[0],
-                         a=env.action_space.n)
+                         a=env.action_space.n,
+                         action_choices=env.unwrapped.n_action_choices)
+        self.agg = np.mean if params['agg'] == 'mean' else np.sum
         self.nb_costs = self.env.unwrapped.cost_function.nb_costs
         self.cost_function = self.env.unwrapped.cost_function
 
@@ -86,11 +88,12 @@ class NSGAII(BaseAlgorithm):
             os.makedirs(self.logdir + 'models/', exist_ok=True)
 
         # Create policy
-        self.policy = QNetFC(dim_state=self.dims['s'],
-                             dim_goal=0,
-                             dim_actions=self.dims['a'],
-                             layers=self.layers,
-                             goal_ids=())
+        self.policy = MultiHeadQNetFC(dim_state=self.dims['s'],
+                                      dim_goal=0,
+                                      dim_actions=self.dims['a'],
+                                      dim_action_choices=self.dims['action_choices'],
+                                      layers=self.layers,
+                                      goal_ids=())
         self.dim_params = self.policy.nb_params
 
         # Sample initial weights just like pytorch would do.
@@ -105,11 +108,12 @@ class NSGAII(BaseAlgorithm):
                 # val = np.random.random((n_samples, problem.n_var))
                 val = []
                 for _ in range(n_samples):
-                    policy = QNetFC(dim_state=dims['s'],
-                                    dim_goal=0,
-                                    dim_actions=dims['a'],
-                                    layers=layers,
-                                    goal_ids=[])
+                    policy = MultiHeadQNetFC(dim_state=dims['s'],
+                                             dim_goal=0,
+                                             dim_actions=dims['a'],
+                                             dim_action_choices=dims['action_choices'],
+                                             layers=layers,
+                                             goal_ids=[])
                     params = policy.get_params()
                     val.append(params)
                 return np.array(val)
@@ -131,9 +135,9 @@ class NSGAII(BaseAlgorithm):
                                        env=self.env,
                                        n=self.n_evals_if_stochastic if self.stochastic else 1,
                                        eval=False,
-                                       additional_keys=['costs', 'n_icu'],
+                                       additional_keys=['costs'],
                                        )
-                costs_eps = np.array([np.sum(episodes[i_ep]['costs'], axis=0) for i_ep in range(self.n_evals_if_stochastic if self.stochastic else 1)])
+                costs_eps = np.array([self.agg(episodes[i_ep]['costs'], axis=0) for i_ep in range(self.n_evals_if_stochastic if self.stochastic else 1)])
                 costs_mean.append(costs_eps.mean(axis=0))
                 costs_std.append(costs_eps.std(axis=0))
 
@@ -212,7 +216,7 @@ class NSGAII(BaseAlgorithm):
                                        additional_keys=['costs'],
                                        )
 
-                costs = np.array([np.array(e['costs']).sum(axis=0) for e in episodes])
+                costs = np.array([self.agg(np.array(e['costs']), axis=0) for e in episodes])
                 costs_mean.append(costs.mean(axis=0))
                 costs_std.append(costs.std(axis=0))
 
@@ -227,10 +231,10 @@ class NSGAII(BaseAlgorithm):
             res['X'] = weights
             costs = costs_mean
         elif best:
-            weights = self.res_eval['X']
-            costs = self.res_eval['F']
+            weights = self.res_eval[0]['X']
+            costs = self.res_eval[0]['F']
             normalized_costs = np.array([c_f.scale(c) for c_f, c in zip(self.cost_function.costs, costs.transpose())]).transpose()
-            agg_cost = normalized_costs.sum(axis=1)
+            agg_cost = self.agg(normalized_costs, axis=1)
             ind_min = np.argmin(agg_cost)
             self.policy.set_params(weights[ind_min])
             episodes = run_rollout(policy=self,
@@ -239,7 +243,7 @@ class NSGAII(BaseAlgorithm):
                                    eval=True,
                                    additional_keys=['costs'],
                                    )
-            costs = np.array([np.array(e['costs']).sum(axis=0) for e in episodes])
+            costs = np.array([self.agg(np.array(e['costs']), axis=0) for e in episodes])
             # res['X'] = weights[ind_min]
             for i, c_m, c_std in zip(range(costs.shape[1]), costs.mean(axis=0), costs.std(axis=0)):
                 res['C{} mean'.format(i)] = c_m
@@ -248,8 +252,8 @@ class NSGAII(BaseAlgorithm):
         elif goal is not None:
             nn_model = NearestNeighbors(n_neighbors=1)
 
-            weights = self.res_eval['X']
-            costs = self.res_eval['F']
+            weights = self.res_eval[0]['X']
+            costs = self.res_eval[0]['F']
             normalized_costs = np.array([c_f.scale(c) for c_f, c in zip(self.cost_function.costs, costs.transpose())]).transpose()
             nn_model.fit(normalized_costs)
             normalized_goal = np.atleast_2d(np.array([c_f.scale(g) for c_f, g in zip(self.cost_function.costs, goal)]))
@@ -261,7 +265,7 @@ class NSGAII(BaseAlgorithm):
                                    eval=True,
                                    additional_keys=['costs'],
                                    )
-            costs = np.array([np.array(e['costs']).sum(axis=0) for e in episodes])
+            costs = np.array([self.agg(np.array(e['costs']), axis=0) for e in episodes])
             res['X'] = weights[ind_nn]
             res['F'] = costs.mean(axis=0)
             res['F_std'] = costs.std(axis=0)
@@ -272,7 +276,7 @@ class NSGAII(BaseAlgorithm):
                                    eval=True,
                                    additional_keys=['costs'],
                                    )
-            costs = np.array([np.array(e['costs']).sum(axis=0) for e in episodes])
+            costs = np.array([self.agg(np.array(e['costs']), axis=0) for e in episodes])
             for i, c_m, c_std in zip(range(costs.shape[1]), costs.mean(axis=0), costs.std(axis=0)):
                 res['C{} mean'.format(i)] = c_m
                 res['C{} std'.format(i)] = c_std
@@ -285,10 +289,10 @@ class NSGAII(BaseAlgorithm):
         with open(path, 'rb') as f:
             self.res_eval = pickle.load(f)
 
-        weights = self.res_eval['X']
-        costs = self.res_eval['F']
+        weights = self.res_eval[0]['X']
+        costs = self.res_eval[0]['F']
         normalized_costs = np.array([c_f.scale(c) for c_f, c in zip(self.cost_function.costs, costs.transpose())]).transpose()
-        agg_cost = normalized_costs.sum(axis=1)
+        agg_cost = self.agg(normalized_costs, axis=1)
         ind_min = np.argmin(agg_cost)
         self.policy.set_params(weights[ind_min])
 

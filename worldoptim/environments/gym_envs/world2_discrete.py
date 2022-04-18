@@ -3,12 +3,13 @@ import gym
 from worldoptim.environments.gym_envs.base_env import BaseEnv
 from worldoptim.environments.models.utils.pyworld import plot_world_state
 import pickle
+from worldoptim.utils import get_repo_path
 
 class World2Discrete(BaseEnv):
     def __init__(self,
                  cost_function,
                  model,
-                 simulation_horizon=200,  # simulation horizon (starts in 1900)
+                 simulation_horizon=250,  # simulation horizon (starts in 1900)
                  time_action_start=122,  # delay before the policy starts controlling the model (in years)
                  percentage_shift=0.05,  # strength of the control exerted on control variables
                  time_resolution=1,  # 1 year
@@ -49,7 +50,7 @@ class World2Discrete(BaseEnv):
         # define dict to translate labels to id in the state vector
         self.label_to_id = dict(zip(self.state_labels, np.arange(len(self.state_labels))))
         # define scalars to normalize state features
-        with open('../../../data/model_data/world2/1970_state.pkl', 'rb') as f:
+        with open(get_repo_path() + 'data/model_data/world2/1970_state.pkl', 'rb') as f:
             state_1970 = pickle.load(f)
         self.normalization_factors = np.array([state_1970[k] for k in self.state_labels])
         self.time_resolution = time_resolution
@@ -61,7 +62,7 @@ class World2Discrete(BaseEnv):
                          dim_action=5,
                          discrete=True,
                          seed=seed)
-
+        self.n_action_choices = 3
         self._max_episode_steps = simulation_horizon // time_resolution
         self.history = None
 
@@ -155,15 +156,15 @@ class World2Discrete(BaseEnv):
         Parameters
         ----------
         action: int
-            Action is -1 to decrease by X%, +1 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
+            Action is 1 to decrease by X%, 2 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
 
         """
         # add or substract self.percentage_shift percent of the control state
         for i_v, v in enumerate(self.model.control_variables):
-            assert action[i_v] in [-1, 0, 1]
-            if action[i_v] == 1:
+            assert action[i_v] in [0, 1, 2]
+            if action[i_v] == 2:
                 self.model.current_internal_params[v] += self.percentage_shift * self.model.current_internal_params[v]
-            elif action[i_v] == -1:
+            elif action[i_v] == 1:
                 self.model.current_internal_params[v] -= self.percentage_shift * self.model.current_internal_params[v]
             # clip them to reasonable values
             self.model.current_internal_params[v] = np.clip(self.model.current_internal_params[v], *self.model.control_variables_ranges[i_v])
@@ -177,7 +178,7 @@ class World2Discrete(BaseEnv):
         Parameters
         ----------
         action: int
-            Action is -1 to decrease by X%, +1 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
+            Action is 1 to decrease by X%, 2 to increase by X%, 0 to do nothing, on each control variable. X% is self.percentage_shift
 
 
         Returns
@@ -196,7 +197,7 @@ class World2Discrete(BaseEnv):
         self.jump_of = min(self.time_resolution, self.simulation_horizon - self.t)
 
         # uncomment this to test the 'increased natural resources scenario'
-        # if self.t == 70:
+        # if self.t == 122:
         #     self.model.current_internal_params['NRUN'] = 0.25
         self.update_with_action(action)
 
@@ -249,7 +250,7 @@ class World2Discrete(BaseEnv):
 
     # Utils
     def sample_action(self):
-        return np.random.choice([-1, 0, 1], size=self.dim_action)
+        return np.random.choice([0, 1, 2], size=self.dim_action)
 
     def _normalize_env_state(self, env_state):
         return (env_state / np.array(self.normalization_factors)).copy()
@@ -271,6 +272,8 @@ class World2Discrete(BaseEnv):
         stocks_labels = self.model.stocks
         rates = [np.array(self.history['normalized_env_states'])[:, self.state_labels.index(k)] for k in self.model.rates]
         rates_labels = self.model.rates
+        cumulative_death_cost = [np.array(self.history['costs'])[:i, 0].mean() for i in range(len(t) - 1)]
+        cumulative_qol_cost = [np.array(self.history['costs'])[:i, 1].mean() for i in range(len(t) - 1)]
         death_rate = np.array(self.history['env_states'])[:, self.state_labels.index('DR')] / \
                      np.array(self.history['env_states'])[:, self.state_labels.index('P')] / 0.028
 
@@ -300,16 +303,19 @@ class World2Discrete(BaseEnv):
         data['world_stats'] = dict(states=world_states, labels=world_states_labels)
         data['stats_run'] = stats_run
         data['stats_run2'] = stats_run2
-        data['title'] = 'Results'
+        data['title'] = 'QoL cost: {:.2f}, Death Cost: {:.2f}, Aggregated Cost: {:.2f}'.format(cumulative_qol_cost[-1],
+                                                                                             cumulative_death_cost[-1],
+                                                                                             np.mean(self.history['aggregated_costs']))
         return data
 
 
 if __name__ == '__main__':
+    # This demo plots results for random actions starting in 2022.
     from worldoptim.utils import plot_stats
     from worldoptim.environments.cost_functions import get_cost_function
     from worldoptim.environments.models import get_model
 
-    simulation_horizon = 200
+    simulation_horizon = 250
     action_start = 122
     stochastic = False
 

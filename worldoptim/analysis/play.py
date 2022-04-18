@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 
 from worldoptim.utils import plot_stats, get_repo_path
 from notebook_utils import setup_for_replay
+from worldoptim.environments.models.utils.pyworld import plot_world_state
 
-NB_EPISODES = 5
-FOLDER = get_repo_path() + "/data/results/EpidemicDiscrete-v0/DQN/"
+NB_EPISODES = 1
+FOLDER = get_repo_path() + "/data/results/World2Discrete-v0/NSGAII/"
 SAVE = True
 
 def play(folder, nb_eps, seed, save=False):
@@ -29,7 +30,7 @@ def play(folder, nb_eps, seed, save=False):
 
     algorithm, cost_function, env, params = setup_for_replay(folder, seed)
 
-    goal = np.array([45000, 20])
+    goal = np.array([10, -80])
     for i_ep in range(nb_eps):
         res, costs = algorithm.evaluate(n=1, best=False, goal=goal)#np.array([0.4]))#p.array([0.5, 1, 1]))
         # print('----------------')
@@ -37,28 +38,25 @@ def play(folder, nb_eps, seed, save=False):
         #     print(k + ': {:.2f}'.format(res[k]))
         stats = env.unwrapped.get_data()
 
-        labs = []
-        for l in stats['model_states_labels']:
-            if l == 'I':
-                labs.append(l)
-            else:
-                labs.append(l + r' $\mathbf{(\times 10^4)}$')
-        # plot model states
-        plot_stats(t=stats['history']['env_timesteps'],
-                   states=np.array(stats['history']['model_states']).transpose() / np.array([1e4,1e4,1,1e4,1e4,1e4]).reshape(-1, 1),
-                   labels=labs,#stats['model_states_labels'],
-                   lockdown=np.array(stats['history']['lockdown']),
-                   icu_capacity=stats['icu_capacity'],
-                   time_jump=stats['time_jump'])
+        plot_world_state(time=stats['stats_run']['time'], states=stats['world_stats']['states'], show=False)
+        if save:
+            plt.savefig(folder + 'plots/worldmodel_states_ep_{}_{}.pdf'.format(i_ep, goal))
+            plt.close('all')
+        plot_stats(t=stats['stats_run2']['time'],
+                   states=stats['stats_run2']['to_plot'],
+                   labels=stats['stats_run2']['labels'],
+                   legends=stats['stats_run2']['legends'],
+                   title=stats['title'],
+                   time_jump=stats['time_jump'],
+                   )
         if save:
             plt.savefig(folder + 'plots/model_states_ep_{}_{}.pdf'.format(i_ep, goal))
             plt.close('all')
-        plot_stats(t=stats['history']['env_timesteps'][1:],
+        plot_stats(t=stats['stats_run']['time'],
                    states=stats['stats_run']['to_plot'],
                    labels=stats['stats_run']['labels'],
                    legends=stats['stats_run']['legends'],
                    title=stats['title'],
-                   lockdown=np.array(stats['history']['lockdown']),
                    time_jump=stats['time_jump'],
                    show=False if save else i_ep == (nb_eps - 1)
                    )
@@ -78,7 +76,8 @@ if __name__ == '__main__':
     folder = kwargs['folder']
     files = os.listdir(folder)
     for f in sorted(files):
-        print(f)
-        plot_folder = folder + f + '/plots/'
-        os.makedirs(plot_folder, exist_ok=True)
-        play(folder + f + '/', kwargs['nb_eps'], kwargs['seed'], kwargs['save'])
+        if f != 'res':
+            print(f)
+            plot_folder = folder + f + '/plots/'
+            os.makedirs(plot_folder, exist_ok=True)
+            play(folder + f + '/', kwargs['nb_eps'], kwargs['seed'], kwargs['save'])

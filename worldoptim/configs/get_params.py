@@ -24,6 +24,8 @@ def get_params(config_id, expe_name=None):
         from worldoptim.configs.goal_dqn_constraints import params
     elif config_id == 'nsga_ii':
         from worldoptim.configs.nsga_ii import params
+    elif config_id == 'nsga_ii_world2':
+        from worldoptim.configs.nsga_ii_world2 import params
     else:
         raise NotImplementedError
     if expe_name:

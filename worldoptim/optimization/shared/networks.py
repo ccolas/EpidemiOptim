@@ -3,10 +3,13 @@ import torch.nn as nn
 import numpy as np
 
 import torch.autograd as autograd
+from torch.nn.modules import ModuleList
 USE_CUDA = torch.cuda.is_available()
 Variable = lambda *args, **kwargs: autograd.Variable(*args, **kwargs).cuda() if USE_CUDA else autograd.Variable(*args, **kwargs)
 
-def mlp(sizes, activation, output_activation=nn.Identity):
+def mlp(sizes, activation, output_activation=None):
+    if output_activation == None:
+        output_activation = nn.Identity
     layers = []
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation
@@ -165,3 +168,75 @@ class QNetFC(nn.Module):
             q_value = self.forward(state).detach().numpy().flatten()
         action = np.argmax(q_value)
         return np.atleast_1d(action)
+
+
+class MultiHeadQNetFC(nn.Module):
+    def __init__(self,
+                 dim_state,
+                 dim_goal,
+                 dim_actions,
+                 dim_action_choices,
+                 layers,
+                 goal_ids):
+        """
+        Fully connected Q-Network.
+
+        Parameters
+        ----------
+        dim_state: int
+            Dimension of the state.
+        dim_goal: int
+            Dimension of the goal.
+        dim_actions: int
+            Dimension of the actions.
+        layers: list of ints
+            Description of the hidden layers sizes.
+        goal_ids: tuple of ints
+            Describes the indexes of the goal to be added as input of the network (UVFA, Schaul et al., 2015).
+        """
+        super(MultiHeadQNetFC, self).__init__()
+        self.dim_state = dim_state
+        self.dim_goal = dim_goal
+        self.dim_actions = dim_actions
+        self.dim_action_choices = dim_action_choices
+        self.goal_ids = np.array(goal_ids)
+
+        self.input_ids =  np.concatenate([np.arange(self.dim_state), self.goal_ids + self.dim_state])
+
+        self.shared_layers = (dim_state + len(goal_ids),) + layers
+        self.shared_network = mlp(sizes=self.shared_layers, activation=nn.ReLU, output_activation=nn.ReLU)
+        self.final_layers = [layers[-1], dim_action_choices]
+        self.network_heads = ModuleList([mlp(sizes=self.final_layers, activation=nn.ReLU, output_activation=nn.Identity) for _ in range(dim_actions)])
+
+    @property
+    def nb_params(self):
+        return count_vars(self.shared_network) + count_vars(self.network_heads)
+
+    def forward(self, obs):
+        shared_output = self.shared_network(obs[:, self.input_ids])
+        return [net_head.forward(shared_output) for net_head in self.network_heads]
+
+    def set_params(self, params):
+        """
+        Set the params of the network to the given parameters
+        """
+        cpt = 0
+        for param in self.parameters():
+            tmp = np.product(param.size())
+            param.data.copy_(torch.from_numpy(
+                params[cpt:cpt + tmp]).view(param.size()))
+            cpt += tmp
+
+
+    def get_params(self):
+        """
+        Returns parameters of the actor as numpy array
+        """
+        return np.hstack([v.data.cpu().numpy().flatten() for v in self.parameters()]).copy()
+
+    def act(self, state):
+        with torch.no_grad():
+            state = Variable(torch.FloatTensor(state).unsqueeze(0))
+            q_values = [out.detach().numpy().flatten() for out in self.forward(state)]
+        actions = [np.argmax(q_values[i]) for i in range(self.dim_actions)]
+        return np.atleast_1d(actions)

@@ -50,7 +50,7 @@ class QoLCost(BaseCostFunction):
         """
         # compute new deaths and pib loss
         qol = state[:, label_to_id['QL']]
-        cost = (1 - qol) * 10
+        cost = (1 - qol)
         return cost
 
     def compute_cumulative_cost(self, previous_state, state, label_to_id, action, others={}):

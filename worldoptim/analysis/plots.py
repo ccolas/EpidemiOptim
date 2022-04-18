@@ -12,16 +12,20 @@ matplotlib.rc('font', **font)
 
 LINE = 'mean'
 ERR = 'sem'
-COSTS_LABELS = ['# deaths', 'GDP cost (B)']
-COST_LABELS2 = ['Health cost', 'Economic cost']
-XLIM = (0, 60000)
-YLIM = (0, 180)
+# COSTS_LABELS = ['# deaths', 'GDP cost (B)']
+# COST_LABELS2 = ['Health cost', 'Economic cost']
+COSTS_LABELS = ['Death rate', 'QoL']
+COST_LABELS2 = COSTS_LABELS.copy()
+# XLIM = (0, 60000)
+# YLIM = (0, 180)
+XLIM = None
+YLIM = None
 X_STEP = 50
 SCATTER_WIDTH = 150
 LINEWIDTH = 4
 ALPHA = 0.3
 DPI = 100
-RES_FOLDER = get_repo_path() + "/data/results/experiments/"
+RES_FOLDER = get_repo_path() + "/data/results/World2Discrete-v0/"
 LINE, ERR_MIN, ERR_MAX = get_stat_func(line=LINE, err=ERR)
 PLOT_STD = True
 SWITCH = True
@@ -115,14 +119,16 @@ def compute_max_costs(folder):
                     except:
                         with open(trial_folder + 'res_eval.pk', 'rb') as f:
                             res = pickle.load(f)
-                    mean = res['F'].max(axis=0)  # mean of the points in Pareto front
+                    this_min = res[0]['F'].min(axis=0)  # mean of the points in Pareto front
+                    this_max = res[0]['F'].max(axis=0)
                     if SWITCH:
-                        mean[0], mean[1] = mean[1].copy(), mean[0].copy()
+                        this_min[0], this_min[1] = this_min[1].copy(), this_min[0].copy()
+                        this_max[0], this_max[1] = this_max[1].copy(), this_max[0].copy()
                     for i_c in range(2):
-                        if mean[i_c] > max_costs[i_c]:
-                            max_costs[i_c] = mean[i_c]
-                        if mean[i_c] < min_costs[i_c]:
-                            min_costs[i_c] = mean[i_c]
+                        if this_max[i_c] > max_costs[i_c]:
+                            max_costs[i_c] = this_max[i_c]
+                        if this_min[i_c] < min_costs[i_c]:
+                            min_costs[i_c] = this_min[i_c]
     return max_costs, min_costs
 
 def extract_res(folder, algo, max_costs, min_costs):
@@ -156,8 +162,8 @@ def extract_res(folder, algo, max_costs, min_costs):
                 with open(folder + fold + '/res_eval.pk', 'rb') as f:
                     res = pickle.load(f)
             os.makedirs(folder + fold + '/plots', exist_ok=True)
-            mean = res['F']  # mean of the points in Pareto front
-            std = res['F_std']  # std of the points in Pareto front (over n evaluation episodes)
+            mean = res[0]['F']  # mean of the points in Pareto front
+            std = res[0]['F_std']  # std of the points in Pareto front (over n evaluation episodes)
 
             # Swap costs depending on the desired x-axis.
             if SWITCH:
@@ -168,7 +174,7 @@ def extract_res(folder, algo, max_costs, min_costs):
             save_fig(folder + fold + '/plots/pareto_{}.pdf'.format(SWITCH), artists)
 
             if algo == 'DQN':
-                goals.append(res['G_all'].flatten())  # collect the goal for DQN policies, so as to pull them into populations of policies
+                goals.append(res[0]['G_all'].flatten())  # collect the goal for DQN policies, so as to pull them into populations of policies
                 mean = mean.flatten()
                 std = std.flatten()
 
@@ -206,7 +212,7 @@ def extract_res(folder, algo, max_costs, min_costs):
         data_std = data_std[sorted_inds]
 
         # align data to compute mean
-        inds = np.arange(0, XLIM[1], X_STEP)
+        inds = np.arange(0, max_costs[0], X_STEP)
         aligned_data = np.zeros([inds.size])
         aligned_std = np.zeros([inds.size])
         aligned_data.fill(np.nan)
@@ -427,12 +433,12 @@ if __name__ == '__main__':
     for algo in os.listdir(RES_FOLDER):
         if 'res' not in algo:
             algo_folder = RES_FOLDER + algo + '/'
-            # extract_res(algo_folder, algo, max_costs, min_costs)
+            extract_res(algo_folder, algo, max_costs, min_costs)
             # plot_algo_fronts(algo_folder)
             # beta_plot(algo_folder)
 
-    print('\n\tComparison plots')
-    plot_multi_algo(RES_FOLDER)
+    # print('\n\tComparison plots')
+    # plot_multi_algo(RES_FOLDER)
 
 
 

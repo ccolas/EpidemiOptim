@@ -8,7 +8,7 @@ from worldoptim.configs.get_params import get_params
 from worldoptim.utils import get_logdir, set_seeds
 import argparse
 
-CONFIG =  'dqn'  # 'nsga_ii', 'dqn', 'goal_dqn', 'goal_dqn_constraints'
+CONFIG =  'nsga_ii_world2'  # 'nsga_ii', 'dqn', 'goal_dqn', 'goal_dqn_constraints'
 
 def train(config, expe_name, trial_id, beta_default):
     """
@@ -40,8 +40,7 @@ def train(config, expe_name, trial_id, beta_default):
 
     # Update cost function params
     # here we have cost function parametres that depend on model variables.
-    params['cost_params']['N_region'] = int(model.pop_sizes[params['model_params']['region']])
-    params['cost_params']['N_country']  = int(sum(list(model.pop_sizes.values())))
+    params['cost_params']['drn'] = model.initial_internal_params['DRN']
 
     # Get cost function
     cost_function = get_cost_function(cost_function_id=params['cost_id'],
@@ -52,7 +51,8 @@ def train(config, expe_name, trial_id, beta_default):
                   cost_function=cost_function,
                   model=model,
                   simulation_horizon=params['simulation_horizon'],
-                  seed=params['seed'])
+                  seed=params['seed'],
+                  **params['env_params'])
 
 
     # Setup logdir

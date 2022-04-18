@@ -36,7 +36,7 @@ def plot_world_state(time, states, title=None, dist_spines=0.09, show=True):
     Plots world state from a World2 instance.
 
     """
-    fig, host = plt.subplots(figsize=(7, 4))
+    fig, host = plt.subplots(figsize=(14, 8))
     axs = [host, ]
     for i in range(4):
         axs.append(host.twinx())
