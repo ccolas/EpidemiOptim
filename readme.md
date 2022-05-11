@@ -1,84 +1,69 @@
-# The EpidemiOptim library
+# The WorldOptim library
 
 <p align="center">
 <img src="data/readme/readme.png" width="100%">
 </p>
 <p align="center">
- <em>Left: evolution of costs and model parameters for a DQN lock-down policy DQN. Right: Pareto fronts found by 10 runs of NSGA-II.</em>
+ <em>Evolution of the main variables of the World2 dynamical models in the 'business as usual' scenario.</em>
 </p>
 
+The WorldOptim suite is a library that allows to interface optimization algorithms with models of world dynamics. Epidemiological models are wrapped in OpenAI Gym
+interfaces, making them readily compatible with state-of-the-art optimization algorithms. Check out my [blog post](https://ccolas.github.io//blog/worldoptim) on the topic.
 
+### Background
 
-The EpidemicOptimization suite is a library that allows to interface optimization algorithms with models of epidemic propagation. Epidemiological models are wrapped in OpenAI Gym interfaces, making them readily compatible with state-of-the-art optimization algorithms. The [EpidemiOptim paper](https://arxiv.org/pdf/2010.04452.pdf) motivates the need for the EpidemiOptim library, describes it and presents a case study: the optimization of an on/off lockdown policy in the context of the COVID-19 pandemic.
+In the early 1970s, an international group of researchers called the [club of Rome](https://www.clubofrome.org) was tasked to study the implication of a continued worldwide
+growth. This led to the edition of [_The Limits to Growth_](https://www.clubofrome.org/publication/the-limits-to-growth/) a book that
+remains a reference in the current ecological debate. Its conclusions still hold today: the Earth cannot support present rates of economic and population growth much beyond the
+year 2100, even considering technological improvements.
 
-This library is designed to be easily customized. The underlying propagation model, reward function, state and action spaces can be modified easily.
+Their conclusions are based on World2 and World3, two dynamical models featuring five basic factors that determine and, in their interactions, ultimately limit growth on this
+planet---population increase, agricultural production, nonrenewable resource depletion, industrial output, and pollution generation. Fitted on real data, this model predicts
+the global evolution of these five factors and reaches dark conclusions: a peak of population around 2025 followed by a decrease in population, capital investment and
+general quality of life (see graph above). Although the model is not predictive per se, it highlights the general tendencies: the continual economic growth and the consumption of
+natural resources that is tied to it, will lead our modern societies to their end.
 
-[Click here to play online with the model](https://epidemioptim.bordeaux.inria.fr/)
+In _Limits to Growth_, the authors investigated 5 scenarios. In each scenario, they modify by hand some of the model's parameters. What if the stock of natural
+resources was twice what we think it is? What if we could divide by 2 the amount of pollution emitted per unit of capita? etc. With modern machine learning methods, **we can
+automatize this process, run simulations, and let an optimization algorithm explore the space of mitigation policies to optimize for a given cost function**.
 
 ### What's already there
+This library is designed to be easily customized. The underlying propagation model, reward function, state and action spaces can be modified easily.
 
-* **Epidemiological models**: This library comes with a region-based mechanistic model of the French COVID-19 epidemic fitted on real data, published [here](https://www.medrxiv.org/content/medrxiv/early/2020/04/24/2020.04.21.20073536.full.pdf).
+* **World dynamics models**: This library comes an implementation of the World2 model developed by Jay W. Forrester in 1971. Original Python implementation [here](https://github.com/cvanwynsberghe/pyworld2).
 
-* **Cost functions**: we include a health cost measuring the death toll, and an economic cost measuring the opportunity cost on the GDP due to the epidemic (see our paper for 
-details). A multi-cost class allows to integrate the two costs.
+* **Cost functions**: we include a cost function computed as a negative quality of life and a cost function growing exponentially with the death rate as soon as the death rate 
+  passes a threshold placed at the death rate level of 1970.
 
-* **Learning environments**: The 'EpidemicDiscrete-v0' environment wraps around the epidemiological model and the two cost functions described above. The agent controls the 
-enforcement of a lock-down on a weekly basis. 
+* **Learning environments**: The 'World2Discrete-v0' environment wraps around the World2 model and the two cost functions described above. The agent controls the 
+some variables of the world2 model to minimizes its future costs. 
 
-* **Optimization algorithms**: The library includes [NSGA-II](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=996017), [Deep Q-Networks](https://www.datascienceassn.org/sites/default/files/Human-level%20Control%20Through\%20Deep%20Reinforcement%20Learning.pdf) (DQN), and variants of DQN presented in our paper. 
+* **Optimization algorithms**: The library includes [NSGA-II](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=996017), [Deep Q-Networks](https://www.datascienceassn.
+  org/sites/default/files/Human-level%20Control%20Through\%20Deep%20Reinforcement%20Learning.pdf) (DQN), and variants of DQN. Only NSGA-II was tested.
 
 ### Requirements
 
-The EpidemiOptim library runs with Python>=3.6. All requirements are listed in the `requirements.txt` file.
+The WorldOptim library runs with Python>=3.6. All requirements are listed in the `requirements.txt` file.
 
 ### Running an experiment
 
-Experiments can be run with the `epidemioptim/train.py` script:
+Experiments can be run with the `worldoptim/train.py` script:
 
 ```
-python train.py --config goal_dqn --expe-name goal_dqn_study --trial_id 0
+python train.py --config nsga_ii --expe-name nsga_study --trial_id 0
 ```
 
-The `--config` argument selects one of the configurations defined in `epidemioptim/configs/`. They include: ['dqn', 'goal_dqn', 'goal_dqn_constraints', 'nsga_ii'].
+The `--config` argument selects one of the configurations defined in `worldoptim/configs/`. They include: ['dqn', 'goal_dqn', 'goal_dqn_constraints', 'nsga_ii'].
 The `--expe_name` and `--trial_id` arguments are a string identifier of the exeperiment and an integer identifier of the specific run that will be used to organized results in 
 the `data/results/` folder. 
  
 ### How to customize it
 
-* **Add a module**: epidemiological models, cost functions, gym environments or optimization algorithms can be added to the library. To this end, a new python script containing 
-the module class should be created in `epidemioptim/environments/models/`, `epidemioptim/environments/cost_functions/` ,`epidemioptim/environments/gym_envs/` or 
-`epidemioptim/optimization/` respectively. They should inherit the corresponding base classes `BaseModel`, `BaseCost`, `BaseEnv` or `BaseAlgorithm` respectively. Finally, their 
-reference should be added to their respective get functions (e.g. `epidemioptim/environments/models/get_model.py`).
+* **Add a module**: dynamical models, cost functions, gym environments or optimization algorithms can be added to the library. To this end, a new python script containing 
+the module class should be created in `worldoptim/environments/models/`, `worldoptim/environments/cost_functions/` ,`worldoptim/environments/gym_envs/` or 
+`worldoptim/optimization/` respectively. They should inherit the corresponding base classes `BaseModel`, `BaseCost`, `BaseEnv` or `BaseAlgorithm` respectively. Finally, their 
+reference should be added to their respective get functions (e.g. `worldoptim/environments/models/get_model.py`).
 
-
-### Visualization
-
-A visualization notebook can be found in `epidemioptim/analysis/Visualization EpidemiOptim.ipynb`. It allows the interactive visualizations of one run per condition presented in
- the paper. The user will be able to tune the parameter balance the economic and health costs, to modify constraints on their maximal cumulative values, or to explore the Pareto
-  front resulting from the multi-objective optimization of the NSGA-II algorithm.
-
-If you want to visualize your own runs, copy them from the `data/results` folder (where they are stored by the training process) to the `data/data_for_visualization` folder while 
-respecting the organization. 
-
-This notebook is also hoster in an online application [here](https://epidemioptim.bordeaux.inria.fr/).
-)
   
-### Please contribute !
-
-The EpidemiOptim library can be seen as a collaborative toolbox to facilitate collaborations between people interested in the automatic design of intervention strategies in the 
-context of epidemic propagation. Everyone is welcome to contribute. We are especially interested in new epidemiological models, new costs functions, new learning environments, 
-new optimization algorithms and new ways to visualize the results. Feel free to contact us!
-
 Please report any bug to us!
-
-To cite the library:
-```
-@article{colas2020epidemioptim,
-         title={EpidemiOptim: A Toolbox for the Optimization of Control Policies in Epidemiological Models},
-         author={Colas, C{\'e}dric and Hejblum, Boris and Rouillon, S{\'e}bastien and Thi{\'e}baut, Rodolphe and Oudeyer, Pierre-Yves and Moulin-Frier,               Cl{\'e}ment and Prague, M{\'e}lanie},
-         journal={arXiv preprint arXiv:2010.04452},
-         year={2020}
-}
-```
-
 
